@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Priority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum Status {
+  open
+  in_progress
+  resolved
+  closed
+}
+
+enum EventType {
+  warning
+  breached
+  escalated
+}
+
+model Agent {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  name      String   @db.VarChar(100)
+  email     String   @unique @db.VarChar(150)
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  tickets Ticket[]
+
+  @@map("agents")
+}
+
+model Ticket {
+  id              Int      @id @default(autoincrement()) @db.UnsignedInt
+  subject         String   @db.VarChar(255)
+  description     String?  @db.Text
+  priority        Priority
+  status          Status   @default(open)
+  assignedAgentId Int?     @map("assigned_agent_id") @db.UnsignedInt
+  slaDueAt        DateTime @map("sla_due_at") @db.DateTime(0)
+  isEscalated     Boolean  @default(false) @map("is_escalated")
+  createdAt       DateTime @default(now()) @map("created_at") @db.DateTime(0)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.DateTime(0)
+
+  agent     Agent?          @relation(fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  comments  TicketComment[]
+  slaEvents SlaEvent[]
+
+  @@index([status, slaDueAt], map: "idx_tickets_status_sla")
+  @@index([status, priority], map: "idx_tickets_status_priority")
+  @@index([subject], map: "idx_tickets_subject")
+  @@index([assignedAgentId], map: "fk_ticket_agent")
+  @@map("tickets")
+}
+
+model TicketComment {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  ticketId  Int      @map("ticket_id") @db.UnsignedInt
+  author    String   @db.VarChar(100)
+  message   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.DateTime(0)
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId], map: "fk_comment_ticket")
+  @@map("ticket_comments")
+}
+
+model SlaEvent {
+  id        Int       @id @default(autoincrement()) @db.UnsignedInt
+  ticketId  Int       @map("ticket_id") @db.UnsignedInt
+  eventType EventType @map("event_type")
+  createdAt DateTime  @default(now()) @map("created_at") @db.DateTime(0)
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId, eventType], map: "idx_slaevents_ticket_type")
+  @@map("sla_events")
+}
