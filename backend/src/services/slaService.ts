@@ -2,7 +2,7 @@ import dayjs from 'dayjs';
 import { env } from '../config/env.js';
 import { PRIORITIES, type Priority } from '../types/index.js';
 
-export function getSlaHours(priority: Priority): number {
+function getSlaHours(priority: Priority): number {
   switch (priority) {
     case 'urgent':
       return env.SLA_URGENT_HOURS;

@@ -1,0 +1,96 @@
+@baseUrl = http://localhost:3001
+
+### Health check
+GET {{baseUrl}}/health
+
+### Dashboard stats — counts by status/priority + breached/at-risk
+GET {{baseUrl}}/api/dashboard/stats
+
+### List agents (for the assign dropdown)
+GET {{baseUrl}}/api/agents
+
+### List tickets (default pagination)
+GET {{baseUrl}}/api/tickets
+
+### List tickets — filter by status + priority
+GET {{baseUrl}}/api/tickets?status=open&priority=urgent
+
+### List tickets — subject search
+GET {{baseUrl}}/api/tickets?search=login
+
+### List tickets — pagination
+GET {{baseUrl}}/api/tickets?page=1&limit=5
+
+### Get one ticket with comments + SLA events
+GET {{baseUrl}}/api/tickets/1
+
+### Create a ticket (201)
+POST {{baseUrl}}/api/tickets
+Content-Type: application/json
+
+{
+  "subject": "New ticket from api.http",
+  "description": "Testing the create endpoint",
+  "priority": "urgent"
+}
+
+### Create — validation error (422, invalid priority)
+POST {{baseUrl}}/api/tickets
+Content-Type: application/json
+
+{
+  "subject": "bad ticket",
+  "priority": "nope"
+}
+
+### Create — validation error (422, missing subject)
+POST {{baseUrl}}/api/tickets
+Content-Type: application/json
+
+{
+  "priority": "low"
+}
+
+### Change status — valid transition (open -> in_progress)
+PATCH {{baseUrl}}/api/tickets/1/status
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+### Change status — invalid transition (closed -> in_progress) 422
+PATCH {{baseUrl}}/api/tickets/11/status
+Content-Type: application/json
+
+{
+  "status": "in_progress"
+}
+
+### Assign an agent
+PATCH {{baseUrl}}/api/tickets/1/assign
+Content-Type: application/json
+
+{
+  "agent_id": 2
+}
+
+### Assign — non-existent agent (404)
+PATCH {{baseUrl}}/api/tickets/1/assign
+Content-Type: application/json
+
+{
+  "agent_id": 9999
+}
+
+### Add a comment (201)
+POST {{baseUrl}}/api/tickets/1/comments
+Content-Type: application/json
+
+{
+  "author": "customer",
+  "message": "Any update on this?"
+}
+
+### Get a non-existent ticket (404)
+GET {{baseUrl}}/api/tickets/99999

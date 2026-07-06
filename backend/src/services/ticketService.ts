@@ -64,19 +64,21 @@ export async function getTicketById(id: number) {
 }
 
 export async function updateStatus(id: number, next: Status) {
-  const ticket = await prisma.ticket.findUnique({ where: { id } });
-  if (!ticket) throw new AppError(404, `Ticket ${id} not found`);
+  return prisma.$transaction(async (tx) => {
+    const ticket = await tx.ticket.findUnique({ where: { id } });
+    if (!ticket) throw new AppError(404, `Ticket ${id} not found`);
 
-  const allowed = VALID_TRANSITIONS[ticket.status as Status];
-  if (!allowed.includes(next)) {
-    throw new AppError(
-      422,
-      `Invalid status transition: ${ticket.status} -> ${next}`,
-      { from: ticket.status, allowed },
-    );
-  }
+    const allowed = VALID_TRANSITIONS[ticket.status as Status];
+    if (!allowed.includes(next)) {
+      throw new AppError(
+        422,
+        `Invalid status transition: ${ticket.status} -> ${next}`,
+        { from: ticket.status, allowed },
+      );
+    }
 
-  return prisma.ticket.update({ where: { id }, data: { status: next } });
+    return tx.ticket.update({ where: { id }, data: { status: next } });
+  });
 }
 
 export async function assignAgent(id: number, agentId: number) {
